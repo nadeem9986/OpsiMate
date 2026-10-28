@@ -119,6 +119,7 @@ const PolicyRow = ({ policy }: { policy: RetentionPolicy }) => {
 						type="number"
 						min={1}
 						max={3650}
+						aria-label={`Retention days for ${meta.title}`}
 						value={days}
 						disabled={!policy.enabled || isPending}
 						onChange={(e) => setDays(e.target.value)}
@@ -238,6 +239,7 @@ export const RetentionSettings = () => {
 						type="number"
 						min={1}
 						max={720}
+						aria-label="Cleanup interval in hours"
 						value={intervalHours}
 						disabled={savingConfig}
 						onChange={(e) => setIntervalHours(e.target.value)}
