@@ -143,3 +143,68 @@ describe('RetentionSettings toggles', () => {
 		expect(destructiveToasts()).toEqual([]);
 	});
 });
+
+interface PolicyFixture {
+	resourceType: RetentionResource;
+	title: string;
+	retentionDays: number;
+}
+
+// One policy per resource, each with a distinct retentionDays so the values can be told apart.
+const POLICY_FIXTURES: PolicyFixture[] = [
+	{ resourceType: RetentionResource.ActiveAlerts, title: 'Active alerts', retentionDays: 11 },
+	{ resourceType: RetentionResource.ResolvedAlerts, title: 'Resolved alerts', retentionDays: 12 },
+	{ resourceType: RetentionResource.AlertStatusHistory, title: 'Alert status history', retentionDays: 13 },
+	{ resourceType: RetentionResource.AlertHistoryEvents, title: 'Alert history events', retentionDays: 14 },
+	{ resourceType: RetentionResource.AlertComments, title: 'Alert comments', retentionDays: 15 },
+	{ resourceType: RetentionResource.RootCauses, title: 'Root cause analyses', retentionDays: 16 },
+	{ resourceType: RetentionResource.EnrichmentVersions, title: 'Enrichment versions', retentionDays: 17 },
+	{ resourceType: RetentionResource.AuditLogs, title: 'Audit logs', retentionDays: 18 },
+];
+
+describe('RetentionSettings number inputs', () => {
+	beforeEach(() => {
+		const allPolicies: RetentionSettingsData = {
+			config,
+			policies: POLICY_FIXTURES.map(({ resourceType, retentionDays }) => ({
+				resourceType,
+				enabled: true,
+				retentionDays,
+				updatedAt: '2026-10-01T00:00:00.000Z',
+			})),
+		};
+		vi.mocked(useRetentionSettings).mockReturnValue({
+			data: allPolicies,
+			isLoading: false,
+			error: null,
+		} as unknown as ReturnType<typeof useRetentionSettings>);
+	});
+
+	test('each policy input is found by its category name and shows that retentionDays', () => {
+		render(<RetentionSettings />);
+		for (const { title, retentionDays } of POLICY_FIXTURES) {
+			const input = screen.getByRole('spinbutton', { name: `Retention days for ${title}` });
+			expect((input as HTMLInputElement).value).toBe(String(retentionDays));
+		}
+	});
+
+	test('the audit logs input is matched exactly once', () => {
+		render(<RetentionSettings />);
+		expect(screen.getAllByRole('spinbutton', { name: /audit logs/i })).toHaveLength(1);
+	});
+
+	test('the cleanup interval input is found by name and shows cleanupIntervalHours', () => {
+		render(<RetentionSettings />);
+		const input = screen.getByRole('spinbutton', { name: 'Cleanup interval in hours' });
+		expect((input as HTMLInputElement).value).toBe(String(config.cleanupIntervalHours));
+	});
+
+	test('there are 9 number inputs and none has an empty accessible name', () => {
+		render(<RetentionSettings />);
+		const inputs = screen.getAllByRole('spinbutton');
+		expect(inputs).toHaveLength(9);
+		for (const input of inputs) {
+			expect(input.getAttribute('aria-label')?.trim()).toBeTruthy();
+		}
+	});
+});
